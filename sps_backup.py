@@ -3,14 +3,22 @@
 #https://www.youtube.com/watch?v=XGFDXGyd7Uw
 
 import pyfiglet
-import argparse
 import sys
 import socket
 from datetime import datetime
 import socket, threading
 
-def scan_ports(ip):
+def tcp_scan(ip, port, delay, output):
+    TCPsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    TCPsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    TCPsock.settimeout(delay)
+    try:
+        TCPsock.connect((ip, port))
+        output[port] = 'Listening'
+    except:
+        output[port] = ''
 
+    '''
     #Detecting all open ports on the server
     try:
 
@@ -24,7 +32,7 @@ def scan_ports(ip):
             if result == 0:
                 print("[*] Port {} is open".format(port))
             s.close()
-
+    
     except KeyboardInterrupt:
         print("\n Exiting :(")
         sys.exit()
@@ -32,37 +40,48 @@ def scan_ports(ip):
     except socket.error:
         print("\ Host is not responding :(")
         sys.exit()
+    '''
+    
+    
+def scan_ports(ip):
+
+    #For multithreading
+    threads = []
+    output = {}
+    delay = 0.5
+
+    # Spawning threads to scan ports
+    for i in range(65535):
+        t = threading.Thread(target=tcp_scan, args=(ip, i, delay, output))
+        threads.append(t)
+
+    # Starting threads
+    for i in range(65535):
+        threads[i].start()
+
+    # Locking the main thread until all threads complete
+    for i in range(65535):
+        threads[i].join()
+
+    # Printing listening ports from small to large
+    for i in range(65535):
+        if output[i] == 'Listening':
+            print(str(i) + ': ' + output[i])
 
 def main():
-    #Parsing
-    parser = argparse.ArgumentParser("python3 sys.py")
-    parser.add_argument("IP", help="IP address to port scan", type=str)
-    parser.add_argument("-u", "--udp", action="store_true", help="Chances a TCP Scan to a UDP Scan")
-    parser.add_argument("-pA", "--portAll", action="store_true", help="Scan all ports on TCP or UDP range")
-    #parser.add_argument("-p ", "--port", help="Specify specific ports, or port ranges", type=str)
-    args = parser.parse_args()
-    IP = args.IP
-
-    #parser.add_argument('')
-    print(args)
-
-
-
     ascii_banner = pyfiglet.figlet_format("Simple Port Scanner")
     print(ascii_banner)
 
-    #Default port for testing is 127.0.0.1
-    #ip = input(str("Target IP:"))
-    #ip = "127.0.0.1"
+    ip = input(str("Target IP:"))
 
     #Banner
     print("_" * 54)
-    print("Scanning Target: " + IP)
+    print("Scanning Target: " + ip)
     print("Scanning started at: " + str(datetime.now()))
     print("_" * 54)
 
     #Scan IP
-    scan_ports(IP)
+    scan_ports(ip)
 
 if __name__ == "__main__":
     main()

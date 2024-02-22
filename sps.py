@@ -9,11 +9,14 @@ import socket, threading
 import os
 import platform
 
-def scan_ports(ip, portAll, udp):
+def scan_ports(ip, portAll, udp, specificPortRange):
+    print(specificPortRange)
+    print(type(specificPortRange))
 
-    #Hard coded for now
+    #For specific range
     specificPort = True
-    specificPortRange = "1-1000"
+    if (specificPortRange is None):
+        specificPort = False
 
     #Detecting all open ports on the server
     try:
@@ -71,18 +74,15 @@ def scan_ports(ip, portAll, udp):
         #Specific Port Range TCP
 
         elif (specificPort == True) and (udp == False):
+
+            
+
             try:
                     print("Scanning TCP Ports from " + str(specificPortRange))
                     #commaRange = str(specificPortRange).replace("-", ",")
-                    range = str(specificPortRange).split('-')
-                    lowRange = int(range[0])
-                    highRange = int(range[1])
-
-                    print(str(lowRange))
-                    print(str(highRange))
-                    print(type(int(lowRange)))
+                    portSplit = str(specificPortRange).split('-')
                     
-                    for port in range(int(lowRange),list(highRange)):
+                    for port in range(int(portSplit[0]), int(portSplit[1])):
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         socket.setdefaulttimeout(0.5)
 
@@ -172,11 +172,13 @@ def main():
     parser.add_argument("IP", help="IP address to port scan", type=str)
     parser.add_argument("-u", "--udp", action="store_true", help="Chances a TCP Scan to a UDP Scan")
     parser.add_argument("-pA", "--portAll", action="store_true", help="Scan all ports on TCP or UDP range")
-    #parser.add_argument("-p ", "--port", help="Specify specific ports, or port ranges", type=str)
+    parser.add_argument("-pR ", "--portRange", help="Specify specific ports, or port ranges", type=str)
     args = parser.parse_args()
     IP = args.IP
     portAll =args.portAll
     udp = args.udp
+    specificPortRange = args.portRange
+    
 
 
     #parser.add_argument('')
@@ -190,6 +192,7 @@ def main():
     #Default port for testing is 127.0.0.1
     #ip = input(str("Target IP:"))
     #ip = "127.0.0.1"
+    #specificPortRange = "1-1000"
 
     #Banner
     print("_" * 54)
@@ -198,7 +201,7 @@ def main():
     print("_" * 54)
 
     #Scan IP
-    scan_ports(IP, portAll, udp)
+    scan_ports(IP, portAll, udp, specificPortRange)
 
 if __name__ == "__main__":
     main()

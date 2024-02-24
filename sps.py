@@ -14,6 +14,7 @@ import platform
 def print_bottom_banner(openPorts):
     print("")
     print("-" * 55)
+    print("*Notice: open ports could be filtered")
 
     if openPorts == 0 or openPorts == 1:
         print("Scanned target has {} port open".format(openPorts))
@@ -57,7 +58,9 @@ def tcp_scan(ip, port_range):
     openPorts = 0
     try:
         print("[!] PORT     STATE     SERVICE")
-        for port in port_range:
+
+        if type(port_range) == int:
+            port = port_range
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket.setdefaulttimeout(0.5)
 
@@ -68,6 +71,19 @@ def tcp_scan(ip, port_range):
                 openPorts += 1
                 
             s.close()
+
+        else:
+            for port in port_range:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                socket.setdefaulttimeout(0.5)
+
+                #Return open ports
+                result = s.connect_ex((ip,port))
+                if result == 0:
+                    print_ports(port)
+                    openPorts += 1
+                
+                s.close()
         print_bottom_banner(openPorts)
 
     except KeyboardInterrupt:
@@ -108,7 +124,10 @@ def udp_scan(ip, port_range):
     openPorts = 0
     try:
         print("[!] PORT     STATE     SERVICE")
-        for port in port_range:
+
+
+        if type(port_range) == int:
+            port = port_range
             if  (platform.system() == "Linux") or (platform.system() == "Darwin"):
                 result = os.system("nc -vnzu "+ str(ip) +" "+ str(port) +" > /dev/null 2>&1")
             
@@ -118,6 +137,18 @@ def udp_scan(ip, port_range):
             if result == 0:
                 print_ports(port)
                 openPorts += 1
+
+        else:
+            for port in port_range:
+                if  (platform.system() == "Linux") or (platform.system() == "Darwin"):
+                    result = os.system("nc -vnzu "+ str(ip) +" "+ str(port) +" > /dev/null 2>&1")
+                
+                else:
+                    result = os.system("nc -vnzu "+ str(ip) +" "+ str(port))
+                
+                if result == 0:
+                    print_ports(port)
+                    openPorts += 1
 
         print_bottom_banner(openPorts)
 
@@ -195,6 +226,10 @@ def scan_ports(ip, portAll, udp, specificPortRange):
             elif '-' in str(specificPortRange):
                 portSplit = str(specificPortRange).split('-')
                 tcp_scan_ranged(ip, int(portSplit[0]), int(portSplit[1]))
+
+            elif (',' not in str(specificPortRange)) and ('-' not in str(specificPortRange)):
+                port_range = eval(specificPortRange)
+                tcp_scan(ip, port_range)
                 
             #Maybe add another elif, where it can accept individual ports and port ranges at the same time.
             #Ex: -pR 1,2,3,4,5,6,7,100-10000
@@ -244,7 +279,7 @@ def scan_ports(ip, portAll, udp, specificPortRange):
         sys.exit()
 
     except socket.error:
-        print("\ Host is not responding :(")
+        print("Host is not responding :(")
         sys.exit()
         
 #Main, probably should add error handling
@@ -266,8 +301,20 @@ def main():
     #print(args)
 
     #ASCII Art Banner
-    ascii_banner = pyfiglet.figlet_format("Simple Port Scanner")
-    print(ascii_banner)
+    #ascii_banner = pyfiglet.figlet_format("Simple Port Scanner")
+    #print(ascii_banner)
+    print(r" ____  _                 _        ____            _   ")
+    print(r"/ ___|(_)_ __ ___  _ __ | | ___  |  _ \ ___  _ __| |_")
+    print(r"\___ \| | '_ ` _ \| '_ \| |/ _ \ | |_) / _ \| '__| __|")
+    print(r" ___) | | | | | | | |_) | |  __/ |  __/ (_) | |  | |_")
+    print(r"|____/|_|_| |_| |_| .__/|_|\___| |_|   \___/|_|   \__|")
+    print(r"                  |_|")
+    print(r" ____")
+    print(r"/ ___|  ___ __ _ _ __  _ __   ___ _ __")
+    print(r"\___ \ / __/ _` | '_ \| '_ \ / _ \ '__|")
+    print(r" ___) | (_| (_| | | | | | | |  __/ |")
+    print(r"|____/ \___\__,_|_| |_|_| |_|\___|_|")
+    print("")
 
     #Default port for testing is 127.0.0.1
     #ip = input(str("Target IP:"))

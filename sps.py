@@ -2,14 +2,12 @@
 #Made by Matthew Brenton
 #GitHub: https://github.com/mbrenton
 
-import pyfiglet
+#import pyfiglet
 import argparse
 import sys
 import socket
 from datetime import datetime
 import socket, threading
-import os
-import platform
 
 def print_bottom_banner(openPorts):
     print("")
@@ -125,30 +123,31 @@ def udp_scan(ip, port_range):
     try:
         print("[!] PORT     STATE     SERVICE")
 
-
         if type(port_range) == int:
             port = port_range
-            if  (platform.system() == "Linux") or (platform.system() == "Darwin"):
-                result = os.system("nc -vnzu "+ str(ip) +" "+ str(port) +" > /dev/null 2>&1")
-            
-            else:
-                result = os.system("nc -vnzu "+ str(ip) +" "+ str(port))
-            
-            if result == 0:
-                print_ports(port)
-                openPorts += 1
+            for x in range(1,6):
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    #Attempt bind
+                    s.bind((ip,port))
+                except:
+                    print_ports(port)
+                    openPorts += 1
+                    break
+                s.close()
 
         else:
             for port in port_range:
-                if  (platform.system() == "Linux") or (platform.system() == "Darwin"):
-                    result = os.system("nc -vnzu "+ str(ip) +" "+ str(port) +" > /dev/null 2>&1")
-                
-                else:
-                    result = os.system("nc -vnzu "+ str(ip) +" "+ str(port))
-                
-                if result == 0:
-                    print_ports(port)
-                    openPorts += 1
+                for x in range(1,6):
+                    try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        #Attempt bind
+                        s.bind((ip,port))
+                    except:
+                        print_ports(port)
+                        openPorts += 1
+                        break
+                    s.close()
 
         print_bottom_banner(openPorts)
 
@@ -166,15 +165,16 @@ def udp_scan_ranged(ip, lowPort, highPort):
     try:
         print("[!] PORT     STATE     SERVICE")
         for port in range(lowPort, highPort):
-            if  (platform.system() == "Linux") or (platform.system() == "Darwin"):
-                result = os.system("nc -vnzu "+ str(ip) +" "+ str(port) +" > /dev/null 2>&1")
-            
-            else:
-                result = os.system("nc -vnzu "+ str(ip) +" "+ str(port))
-            
-            if result == 0:
-                print_ports(port)
-                openPorts += 1
+            for x in range(1,6):
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    #Attempt bind
+                    s.bind((ip,port))
+                except:
+                    print_ports(port)
+                    openPorts += 1
+                    break
+                s.close()
 
         print_bottom_banner(openPorts)
 
@@ -190,6 +190,7 @@ def udp_scan_ranged(ip, lowPort, highPort):
 def scan_ports(ip, portAll, udp, specificPortRange):
 
     print("")
+    #ip = socket.gethostbyname (socket.gethostname())
     #Testing port range 
     #print(specificPortRange)
     #print(type(specificPortRange))
@@ -252,6 +253,10 @@ def scan_ports(ip, portAll, udp, specificPortRange):
                 portSplit = str(specificPortRange).split('-')
                 udp_scan_ranged(ip, int(portSplit[0]), int(portSplit[1]))
 
+            elif (',' not in str(specificPortRange)) and ('-' not in str(specificPortRange)):
+                port_range = eval(specificPortRange)
+                udp_scan(ip, port_range)
+
             #Maybe add another elif, where it can accept individual ports and port ranges at the same time.
             #Ex: -pR 1,2,3,4,5,6,7,100-10000
             #elif ('-' in str(specificPortRange)) and (',' in str(specificPortRange)):
@@ -263,12 +268,12 @@ def scan_ports(ip, portAll, udp, specificPortRange):
         #All ports TCP
         elif (portAll == True) and (udp == False):
             print("Scanning All TCP Ports")
-            tcp_scan_ranged(ip, 1, 65535)
+            tcp_scan_ranged(ip, 1, 65535+1)
 
         #All ports UDP
         elif (portAll == True) and (udp == True):
             print("Scanning All UDP Ports")
-            udp_scan_ranged(ip, 1, 65535)
+            udp_scan_ranged(ip, 1, 65535+1)
 
         #Else, error
         else:

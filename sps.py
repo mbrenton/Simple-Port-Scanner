@@ -2,6 +2,11 @@
 #Made by Matthew Brenton
 #GitHub: https://github.com/mbrenton
 
+#Notes:
+#Maybe add a verbose option,
+#Add output to a txt file 
+#Add a flag to use nc or socket
+
 #import pyfiglet
 import argparse
 import sys
@@ -123,6 +128,7 @@ def udp_scan(ip, port_range):
     try:
         print("[!] PORT     STATE     SERVICE")
 
+        #This is only for if scanning a single port.
         if type(port_range) == int:
             port = port_range
             for x in range(1,6):
@@ -136,18 +142,19 @@ def udp_scan(ip, port_range):
                     break
                 s.close()
 
+        #This is for scanning a range of predefined ports. User specfied range is in udp_scan_ranged
         else:
             for port in port_range:
-                for x in range(1,6):
-                    try:
-                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                        #Attempt bind
-                        s.bind((ip,port))
-                    except:
-                        print_ports(port)
-                        openPorts += 1
-                        break
-                    s.close()
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    #Attempt bind
+                    result = s.bind((ip,port))
+                    print("Result: {} Port {}".format(result, port))
+                except:
+                    print_ports(port)
+                    openPorts += 1
+                    #break
+                s.close()
 
         print_bottom_banner(openPorts)
 

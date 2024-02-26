@@ -2,10 +2,9 @@
 #Made by Matthew Brenton
 #GitHub: https://github.com/mbrenton
 
-#Notes:
+#To do:
 #Maybe add a verbose option,
 #Add output to a txt file 
-#Add a flag to use nc or socket
 
 #import pyfiglet
 #import threading
@@ -34,17 +33,17 @@ def print_bottom_banner(openPorts):
 
 def print_ports(port):
     try:
-        service = socket.getservbyport(port)
+        s = socket.getservbyport(port)
         if port < 10:
-            print("[*] {}        open      {}".format(port, service))
+            print("[*] {}        open      {}".format(port, s))
         elif port >= 10 and port < 100:
-            print("[*] {}       open      {}".format(port, service))
+            print("[*] {}       open      {}".format(port, s))
         elif port >= 100 and port < 1000:
-            print("[*] {}      open      {}".format(port, service))
+            print("[*] {}      open      {}".format(port, s))
         elif port >= 1000 and port < 10000:
-            print("[*] {}     open      {}".format(port, service))
+            print("[*] {}     open      {}".format(port, s))
         elif port >= 10000 and port <= 65535:
-            print("[*] {}    open      {}".format(port, service))
+            print("[*] {}    open      {}".format(port, s))
         else:
             print("Port Range Error, Ports can only be from 1-65535")
     
@@ -137,23 +136,13 @@ def udp_scan(ip, port_range):
         if type(port_range) == int:
             port = port_range
             #If linux and has nc
-            if (platform.system() == "Linux") or (platform.system() == "Darwin") and os.path.exists("/usr/bin/nc"):
-                print("netcat on linux")
-                #Trying netcat, if doesnt work do manually.
-                try:
-                    subprocess.run("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
-                    print("does the thing")
-                except FileNotFoundError:
-                    print("DOES NOT the thing")
-                    try:
-                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                        socket.setdefaulttimeout(0.5)
-                        #Attempt bind
-                        s.bind((ip,port))
-                    except:
-                        print_ports(port)
-                        openPorts += 1
-                    s.close()
+            if (platform.system() == "Linux") and os.path.exists("/usr/bin/nc"):
+                #Trying netcat
+                result = os.system("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
+
+                if result == 0:
+                    print_ports(port)
+                    openPorts += 1
                 
             #If windows
             elif  (platform.system() == "Windows"):
@@ -242,15 +231,46 @@ def udp_scan_ranged(ip, lowPort, highPort):
     openPorts = 0
     try:
         print("[!] PORT     STATE     SERVICE")
-        for port in range(lowPort, highPort):
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                #Attempt bind
-                s.bind((ip,port))
-            except:
-                print_ports(port)
-                openPorts += 1
-            s.close()
+        #If linux and has nc
+        if (platform.system() == "Linux") and os.path.exists("/usr/bin/nc"):
+            for port in range(lowPort, highPort):
+                #Trying netcat
+                result = os.system("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
+
+                if result == 0:
+                    print_ports(port)
+                    openPorts += 1
+
+        #If windows
+        elif  (platform.system() == "Windows"):
+            for port in range(lowPort, highPort):
+                try:
+                    subprocess.run("nc -vnzu " + str(ip) + " " + str(port) + " >NUL")
+                except FileNotFoundError:
+                    try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        socket.setdefaulttimeout(0.5)
+                        #Attempt bind
+                        s.bind((ip,port))
+                    except:
+                        print_ports(port)
+                        openPorts += 1
+                    s.close()
+                
+        else:
+            for port in range(lowPort, highPort):
+                try:
+                    subprocess.run("nc -vnzu " + str(ip) + " " + str(port))
+                except FileNotFoundError:
+                    try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                        socket.setdefaulttimeout(0.5)
+                        #Attempt bind
+                        s.bind((ip,port))
+                    except:
+                        print_ports(port)
+                        openPorts += 1
+                    s.close()
 
         print_bottom_banner(openPorts)
 
@@ -267,9 +287,6 @@ def scan_ports(ip, portAll, udp, specificPortRange):
 
     print("")
     #ip = socket.gethostbyname (socket.gethostname())
-    #Testing port range 
-    #print(specificPortRange)
-    #print(type(specificPortRange))
 
     #For specific range
     specificPort = True
@@ -314,7 +331,7 @@ def scan_ports(ip, portAll, udp, specificPortRange):
             #Also fix error handling
 
             else:
-                print("Error")
+                print("Error: Something went wrong with port scanning")
 
         #Specific Port Range UDP
         elif (specificPort == True) and (udp == True):
@@ -339,7 +356,7 @@ def scan_ports(ip, portAll, udp, specificPortRange):
             #Also fix error handling
 
             else:
-                print("Error")
+                print("Error: Something went wrong with port scanning")
 
         #All ports TCP
         elif (portAll == True) and (udp == False):
@@ -363,7 +380,7 @@ def scan_ports(ip, portAll, udp, specificPortRange):
         print("Host is not responding :(")
         sys.exit()
         
-#Main, probably should add error handling
+#Main
 def main():
     #Parsing
     parser = argparse.ArgumentParser("python3 sys.py")
@@ -396,11 +413,6 @@ def main():
     print(r" ___) | (_| (_| | | | | | | |  __/ |")
     print(r"|____/ \___\__,_|_| |_|_| |_|\___|_|")
     print("")
-
-    #Default port for testing is 127.0.0.1
-    #ip = input(str("Target IP:"))
-    #ip = "127.0.0.1"
-    #specificPortRange = "1-1000"
 
     #This is pinging host to make sure it is up. Added this because udp had a bug where it could not detect is host was up.
     print("-" * 55)

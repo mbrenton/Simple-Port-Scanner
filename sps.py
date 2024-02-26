@@ -138,10 +138,13 @@ def udp_scan(ip, port_range):
             port = port_range
             #If linux and has nc
             if (platform.system() == "Linux") or (platform.system() == "Darwin") and os.path.exists("/usr/bin/nc"):
+                print("netcat on linux")
                 #Trying netcat, if doesnt work do manually.
                 try:
                     subprocess.run("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
+                    print("does the thing")
                 except FileNotFoundError:
+                    print("DOES NOT the thing")
                     try:
                         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                         socket.setdefaulttimeout(0.5)
@@ -184,27 +187,18 @@ def udp_scan(ip, port_range):
         #This is for multiple ports, or through a list of ports.
         else:
             #If linux and has nc
-            if (platform.system() == "Linux") or (platform.system() == "Darwin") and os.path.exists("/usr/bin/nc"):
+            if (platform.system() == "Linux") and os.path.exists("/usr/bin/nc"):
                 for port in port_range:
-                    #Trying netcat, if doesnt work do manually.
-                    try:
-                        subprocess.run("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
+                    #Trying netcat
+                    result = os.system("nc -vnzu " + str(ip) + " " + str(port) + " > /dev/null 2>&1")
 
-                    except FileNotFoundError:
-                        try:
-                            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                            socket.setdefaulttimeout(0.5)
-                            #Attempt bind
-                            s.bind((ip,port))
-                        except:
-                            print_ports(port)
-                            openPorts += 1
-                        s.close()
-                
+                    if result == 0:
+                        print_ports(port)
+                        openPorts += 1
+
             #If windows
             elif  (platform.system() == "Windows"):
                 for port in port_range:
-
                     try:
                         subprocess.run("nc -vnzu " + str(ip) + " " + str(port) + " >NUL")
                     except FileNotFoundError:
@@ -220,7 +214,6 @@ def udp_scan(ip, port_range):
                     
             else:
                 for port in port_range:
-
                     try:
                         subprocess.run("nc -vnzu " + str(ip) + " " + str(port))
                     except FileNotFoundError:
